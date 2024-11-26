@@ -1,5 +1,5 @@
 import React,{ useState} from 'react';
-import { StyleSheet, Text, View, TextInput, Button, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, TouchableOpacity, ScrollView } from 'react-native';
 
 // export default function App() {
 //   return (
@@ -70,6 +70,7 @@ import { StyleSheet, Text, View, TextInput, Button, TouchableOpacity } from 'rea
 
 
 
+
 // todo app
 export default function App() {
   const [todos, setTodos] = useState([
@@ -78,6 +79,7 @@ export default function App() {
     { text: 'play on the switch', key: '3' },
   ]);
   const [text, setText] = useState('');
+  const [editKey, setEditKey] = useState(null);
 
   const pressHandler = (key) => {
     setTodos((prevTodos) => {
@@ -85,14 +87,34 @@ export default function App() {
     });
   };
 
+  const updateHandler = (key) => {
+    const todoToEdit = todos.find(todo => todo.key === key);
+    if (todoToEdit) {
+      setText(todoToEdit.text);
+      setEditKey(key);
+    }
+  };
+
   const submitHandler = () => {
     if (text.length > 0) {
-      setTodos((prevTodos) => {
-        return [
-          { text: text, key: Math.random().toString() },
-          ...prevTodos
-        ];
-      });
+      if (editKey) {
+        setTodos((prevTodos) => {
+          return prevTodos.map(todo => {
+            if (todo.key === editKey) {
+              return { ...todo, text: text };
+            }
+            return todo;
+          });
+        });
+        setEditKey(null);
+      } else {
+        setTodos((prevTodos) => {
+          return [
+            { text: text, key: Math.random().toString() },
+            ...prevTodos
+          ];
+        });
+      }
       setText('');
     }
   };
@@ -109,12 +131,14 @@ export default function App() {
           onChangeText={setText}
           value={text}
         />
-        <Button onPress={submitHandler} title='Add Todo' color='red' />
+        <Button onPress={submitHandler} title={editKey ? 'Update Todo' : 'Add Todo'} color='red' />
+        <ScrollView>
         {
           todos.map((todo) => (
-            <TodoItem key={todo.key} item={todo} pressHandler={pressHandler} />
+            <TodoItem key={todo.key} item={todo} pressHandler={pressHandler} updateHandler={updateHandler} />
           ))
         }
+        </ScrollView>
       </View>
     </View>
   );
@@ -126,6 +150,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 100,
+    paddingInline: 10
   },
   header: {
     backgroundColor: 'pink',
@@ -140,6 +166,10 @@ const styles = StyleSheet.create({
   },
   list: {
     marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    display: 'flex',
   },
   input: {
     marginBottom: 10,
@@ -150,10 +180,14 @@ const styles = StyleSheet.create({
   },
 });
 
-const TodoItem = ({ item, pressHandler }) => {
+const TodoItem = ({ item, pressHandler, updateHandler }) => {
   return (
-    <TouchableOpacity onPress={() => pressHandler(item.key)}>
-      <Text style={styles.list}>{item.text}</Text>
-    </TouchableOpacity>
+    <View style={styles.list}>
+      <Text>{item.text.length > 20 ? item.text.substring(0, 20) + '...' : item.text}</Text>
+      <View style={{flexDirection:'row', gap:10}}>
+        <Button title='Update' onPress={() => updateHandler(item.key)} />
+        <Button title='Delete' onPress={() => pressHandler(item.key)} />
+      </View>
+    </View>
   );
 };
